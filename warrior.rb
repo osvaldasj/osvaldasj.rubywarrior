@@ -32,7 +32,7 @@ class Player
   end
   
   def help direction
-    warrior.rescue(direction)
+    warrior.rescue!(direction)
   end
   
   def advance
@@ -41,9 +41,21 @@ class Player
       _direction = :backward
     elsif anything_in_front?
       _direction = :forward
-    else
-      move :forward
-      return false
+    elsif warrior.look
+      _is_enemy = false
+      warrior.look.each do |space|
+        if space.enemy?
+          _is_enemy = true
+          break
+        end
+      end
+        if _is_enemy
+          warrior.shoot!
+          return false
+        else
+          move :forward
+          return false
+      end
     end
     
     if warrior.feel(_direction).enemy?
