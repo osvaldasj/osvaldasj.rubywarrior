@@ -1,53 +1,91 @@
 
 class Player
-  attr_accessor :health_last_turn
-  @health_last_turn = 0
-  @touched_back_wall = false
-  @touched_front_wall = false
+  attr_accessor :health, :warrior
+  @health = 0
 
   def play_turn(warrior)
+    @warrior = warrior
     # cool code goes here
-    if can_rest(warrior.health, @health_last_turn)
-      warrior.rest!
-    elsif !warrior.feel.empty?
-      if warrior.feel.captive?
-        warrior.rescue!
-      elsif warrior.feel(:backward).captive?
-        warrior.rescue!(:backward)
-      else
-        warrior.attack!
-      end
-    elsif (!warrior.feel(:backward).empty? && !@touched_back_wall)
-      if warrior.feel(:backward).captive?
-        warrior.rescue!(:backward)
-      else
-        warrior.attack!(:backward)
-      end
-    else
-      if (@touched_back_wall == false)
-        warrior.walk!(:backward)
-      else
-        if @touched_front_wall
-          warrior.pivot!
-        else
-          warrior.walk!
-        end
-      end
+    unless keep_healthy
+      advance
     end
     
-    @touched_back_wall||= warrior.feel(:backward).wall?
-    @touched_front_wall||= warrior.feel.wall?
-    @health_last_turn = warrior.health
+    @health = warrior.health
+    
   end
   
+#advance
+  def anything_in_front?
+    return !warrior.feel.empty?
+  end
+  
+  def anything_behind?
+    return !warrior.feel(:backward).empty?
+  end
 
-  def can_rest(current, last_turn)
-    if current == 20
-      return false
+  def move direction
+    warrior.walk!(direction)
+  end
+  
+  def charge direction
+    warrior.attack!(direction)
+  end
+  
+  def help direction
+    warrior.rescue(direction)
+  end
+  
+  def advance
+    _direction = nil
+    if anything_behind?
+      _direction = :backward
+    elsif anything_in_front?
+      _direction = :forward
     else
-      return (current.to_i >= last_turn.to_i)
+      move :forward
+      return false
+    end
+    
+    if warrior.feel(_direction).enemy?
+      charge _direction
+    elsif warrior.feel(_direction).captive?
+      help _direction
+    elsif warrior.feel.wall?
+      warrior.pivot!
+    else
+      move :forward
     end
   end
+#protect life
+  def keep_healthy
+    if (being_attacked? && is_health_critical? && !anything_around?)
+      warrior.walk!(:backward)
+      return true
+    elsif (anything_around? && being_attacked? && is_health_critical?)
+      warrior.walk!(:backward)
+      return true
+    elsif (!being_attacked? && is_low_health?)
+      warrior.rest!
+      return true
+    else
+      return false
+    end 
+  end
   
+  def anything_around?
+    return (anything_behind? || anything_in_front?)
+  end
+  
+  def being_attacked?
+    return warrior.health.to_i < @health.to_i
+  end
+  
+  def is_low_health?
+    return warrior.health < 20
+  end
+  
+  def is_health_critical?
+    return warrior.health < 6
+  end
 end
   
