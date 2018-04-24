@@ -41,20 +41,32 @@ class Player
       _direction = :backward
     elsif anything_in_front?
       _direction = :forward
-    elsif warrior.look
+    elsif warrior.look(:backward)
       _is_enemy = false
-      warrior.look.each do |space|
+      warrior.look(:backward).each do |space|
         if space.enemy?
           _is_enemy = true
           break
         end
       end
-        if _is_enemy
-          warrior.shoot!
-          return false
-        else
-          move :forward
-          return false
+      if _is_enemy
+        warrior.shoot!(:backward)
+        return false
+      else
+        _is_enemy = false
+        warrior.look.each do |space|
+          if space.enemy?
+            _is_enemy = true
+            break
+          end
+        end
+          if _is_enemy
+            warrior.shoot!
+            return false
+          else
+            move :forward
+            return false
+        end
       end
     end
     
@@ -100,4 +112,3 @@ class Player
     return warrior.health < 6
   end
 end
-  
